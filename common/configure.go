@@ -8,11 +8,13 @@ import (
 )
 
 type gzhConf struct {
+	AppId string `yaml:"appid"`
 	Token string `yaml:"token"`
 	Api   string `yaml:"api"`
 }
 
 type xxcConf struct {
+	AppId string `yaml:"appid"`
 	Token string `yaml:"token"`
 	Api   string `yaml:"api"`
 }
@@ -30,11 +32,17 @@ type loggerConf struct {
 	Env        string `yaml:"env"`
 }
 
+type httpConf struct {
+	Port   int    `yaml:"port"`
+	Prefix string `yaml:"path-prefix"`
+}
+
 type TaoConf struct {
 	Gzh   gzhConf    `yaml:"gzh"`
 	Xxc   xxcConf    `yaml:"xxc"`
 	Infra infraConf  `yaml:"infra"`
 	Log   loggerConf `yaml:"logger"`
+	Http  httpConf   `yaml:"http"`
 }
 
 func (c *TaoConf) LoadTaoConf(path string) {

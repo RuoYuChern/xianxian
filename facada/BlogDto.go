@@ -8,3 +8,9 @@ type Article struct {
 	Img   string `json:"img"`
 	Url   string `json:"url"`
 }
+
+type BatchGetBlogRsp struct {
+	Code  int       `json:"code"`
+	Msg   string    `json:"msg"`
+	Blogs []Article `json:"blogs"`
+}

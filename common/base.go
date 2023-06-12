@@ -15,6 +15,7 @@ type BaseInfra struct {
 }
 
 var GlbBaInfa *BaseInfra
+var Logger *zap.SugaredLogger
 
 func BaseInit(path string) *BaseInfra {
 	GlbBaInfa = &BaseInfra{}
@@ -33,20 +34,18 @@ func BaseInit(path string) *BaseInfra {
 		return (l >= level)
 	})
 
-	lowPriority := zap.LevelEnablerFunc(func(l zapcore.Level) bool {
-		return (l < level)
-	})
 	console := zapcore.Lock(os.Stdout)
 	consoleEncoder := zapcore.NewConsoleEncoder(zap.NewDevelopmentEncoderConfig())
 	var core zapcore.Core
 	if GlbBaInfa.Conf.Log.Env == "dev" {
 		core = zapcore.NewTee(zapcore.NewCore(encoder, syncer, highPriority), zapcore.NewCore(consoleEncoder, console, highPriority))
 	} else {
-		core = zapcore.NewTee(zapcore.NewCore(encoder, syncer, highPriority), zapcore.NewCore(consoleEncoder, console, lowPriority))
+		core = zapcore.NewCore(encoder, syncer, highPriority)
 	}
 
 	GlbBaInfa.Logger = zap.New(core).Sugar()
 	defer GlbBaInfa.Logger.Sync()
+	Logger = GlbBaInfa.Logger
 	return GlbBaInfa
 }
 
