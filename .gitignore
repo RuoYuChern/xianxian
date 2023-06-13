@@ -3,6 +3,7 @@
 *.iml
 **/target
 **/*.json
+/log 
 **/logs
 **/*.exe
 **/**/.DS_Store
