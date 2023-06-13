@@ -47,6 +47,6 @@ func wxregister(c *gin.Context) {
 }
 
 func RegisterUserRest(router *gin.Engine) {
-	router.POST(fmt.Sprintf("%s/wxlogin", common.GlbBaInfa.Conf.Http.Prefix), wxlogin)
-	router.POST(fmt.Sprintf("%s/wxregister", common.GlbBaInfa.Conf.Http.Prefix), wxregister)
+	router.POST(fmt.Sprintf("%s/user/wxlogin", common.GlbBaInfa.Conf.Http.Prefix), wxlogin)
+	router.POST(fmt.Sprintf("%s/user/wxregister", common.GlbBaInfa.Conf.Http.Prefix), wxregister)
 }

@@ -42,6 +42,7 @@ func main() {
 	router.GET(fmt.Sprintf("%s/hello", baInfra.Conf.Http.Prefix), hello)
 	/**注册用户接口**/
 	rest.RegisterUserRest(router)
+	rest.RegisterBlogRest(router)
 
 	srv := &http.Server{
 		Addr:    fmt.Sprintf(":%d", baInfra.Conf.Http.Port),
