@@ -10,7 +10,7 @@ type WxLogin struct {
 	TID      string `json:"tid" binding:"required"`
 	Code     string `json:"code" binding:"required"`
 	Nickname string `json:"nickname" binding:"required"`
-	Avatar   string `json:"avatar" binding:"required"`
+	//Avatar   string `json:"avatar" binding:"required"`
 }
 
 type UserResp struct {
