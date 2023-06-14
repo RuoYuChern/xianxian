@@ -34,7 +34,10 @@ type loggerConf struct {
 
 type httpConf struct {
 	Port   int    `yaml:"port"`
+	Host   string `yaml:"domain"`
 	Prefix string `yaml:"path-prefix"`
+	Jwt    string `yaml:"jwt"`
+	Avator string `yaml:"avator"`
 }
 
 type TaoConf struct {

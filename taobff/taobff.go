@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -23,15 +24,41 @@ func gateFilter() gin.HandlerFunc {
 	}
 }
 
+func JwtAuthMiddleware(c *gin.Context) {
+	authHeader := c.Request.Header.Get("Authorization")
+	if authHeader == "" {
+		c.String(http.StatusForbidden, "authorization empty")
+		c.Abort()
+		return
+	}
+	parts := strings.SplitN(authHeader, " ", 2)
+	if (len(parts) != 2) || (parts[0] != "Bearer") {
+		c.String(http.StatusForbidden, "authorization error")
+		c.Abort()
+		return
+	}
+
+	err := common.VerifyToken(parts[1], c)
+	if err != nil {
+		c.String(http.StatusForbidden, "authorization faild")
+		c.Abort()
+		return
+	}
+	c.Next()
+}
+
 func hello(c *gin.Context) {
 	c.String(http.StatusOK, "Hello")
+}
+
+func auth(c *gin.Context) {
+	c.String(http.StatusOK, "Auth ok")
 }
 
 func main() {
 	conf := "../config/tao.yaml"
 	baInfra := common.BaseInit(conf)
 	baInfra.Logger.Info("Hello go")
-	baInfra.Logger.Debug("Hello go")
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 	router := gin.New()
@@ -40,9 +67,10 @@ func main() {
 	router.Use(gin.Recovery())
 
 	router.GET(fmt.Sprintf("%s/hello", baInfra.Conf.Http.Prefix), hello)
+	router.GET(fmt.Sprintf("%s/auth", baInfra.Conf.Http.Prefix), JwtAuthMiddleware, auth)
 	/**注册用户接口**/
-	rest.RegisterUserRest(router)
-	rest.RegisterBlogRest(router)
+	rest.RegisterUserRest(router, JwtAuthMiddleware)
+	rest.RegisterBlogRest(router, JwtAuthMiddleware)
 
 	srv := &http.Server{
 		Addr:    fmt.Sprintf(":%d", baInfra.Conf.Http.Port),

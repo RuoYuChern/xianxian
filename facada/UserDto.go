@@ -1,16 +1,16 @@
 package facada
 
 type User struct {
-	Uid      string `json:"uid"`
-	Nickname string `json:"nickname"`
-	Avatar   string `json:"avatar"`
+	Uid      string `json:"uid" binding:"required"`
+	Nickname string `json:"nickname" binding:"required"`
+	Avatar   string `json:"avatar" binding:"required"`
 }
 
 type WxLogin struct {
-	TID      string `json:"tid"`
-	Code     string `json:"code"`
-	Nickname string `json:"nickname"`
-	Avatar   string `json:"avatar"`
+	TID      string `json:"tid" binding:"required"`
+	Code     string `json:"code" binding:"required"`
+	Nickname string `json:"nickname" binding:"required"`
+	Avatar   string `json:"avatar" binding:"required"`
 }
 
 type UserResp struct {

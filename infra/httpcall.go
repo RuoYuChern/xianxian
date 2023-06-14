@@ -3,6 +3,7 @@ package infra
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -60,6 +61,10 @@ func Code2Session(code string) (*Code2SessionRsp, error) {
 		return nil, err
 	}
 
+	if csr.Code != 0 {
+		common.Logger.Infof("Code2Session failed:%s", csr.Msg)
+		return nil, errors.New(csr.Msg)
+	}
 	return &csr, nil
 }
 

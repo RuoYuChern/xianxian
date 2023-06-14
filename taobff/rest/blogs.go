@@ -34,14 +34,20 @@ func batchGet(c *gin.Context) {
 		return
 	}
 
-	blogs := make([]*facada.Article, iPageSize)
+	blogs := make([]*facada.Article, 0)
+	var offset = 0
 	for v := range rsp.Item {
 		mvo := rsp.Item[v]
 		news := mvo.Cnt.NewsItem[0]
-		img := fmt.Sprintf("/bff/blogs/material-get?media_id=%s", news.Tmid)
+		if news.Tmid == "" {
+			continue
+		}
+
+		img := fmt.Sprintf("%s/bff/blogs/material-get?media_id=%s", common.GlbBaInfa.Conf.Http.Host, news.Tmid)
 		wz := facada.Article{Id: mvo.Mid, Type: "gzh", Title: news.Title,
 			Author: news.Author, Desc: news.Digest, Img: img, Url: news.Url}
 		blogs = append(blogs, &wz)
+		offset++
 	}
 	bgr := facada.BatchGetBlogRsp{Code: rsp.Code, Msg: rsp.Msg, Blogs: blogs}
 
@@ -64,7 +70,7 @@ func getMaterial(c *gin.Context) {
 
 }
 
-func RegisterBlogRest(router *gin.Engine) {
+func RegisterBlogRest(router *gin.Engine, handler gin.HandlerFunc) {
 	router.GET(fmt.Sprintf("%s/blogs/batch-get", common.GlbBaInfa.Conf.Http.Prefix), batchGet)
 	router.GET(fmt.Sprintf("%s/blogs/material-get", common.GlbBaInfa.Conf.Http.Prefix), getMaterial)
 }
