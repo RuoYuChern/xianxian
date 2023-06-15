@@ -42,7 +42,7 @@ func InitFs() {
 func GetFs(key string) (*Fs, error) {
 	fs, err := fsMapping[key]
 	if !err {
-		return nil, errors.New("Not exist")
+		return nil, errors.New("note xist")
 	}
 	return fs, nil
 }
