@@ -11,6 +11,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"xiyu.com/common"
+	"xiyu.com/infra"
 	"xiyu.com/taobff/rest"
 )
 
@@ -27,20 +28,20 @@ func gateFilter() gin.HandlerFunc {
 func JwtAuthMiddleware(c *gin.Context) {
 	authHeader := c.Request.Header.Get("Authorization")
 	if authHeader == "" {
-		c.String(http.StatusForbidden, "authorization empty")
+		c.String(http.StatusForbidden, "Authorization empty")
 		c.Abort()
 		return
 	}
 	parts := strings.SplitN(authHeader, " ", 2)
 	if (len(parts) != 2) || (parts[0] != "Bearer") {
-		c.String(http.StatusForbidden, "authorization error")
+		c.String(http.StatusForbidden, "Authorization error")
 		c.Abort()
 		return
 	}
 
 	err := common.VerifyToken(parts[1], c)
 	if err != nil {
-		c.String(http.StatusForbidden, "authorization faild")
+		c.String(http.StatusForbidden, "Authorization faild")
 		c.Abort()
 		return
 	}
@@ -55,12 +56,35 @@ func auth(c *gin.Context) {
 	c.String(http.StatusOK, "Auth ok")
 }
 
+type helloAction struct {
+	common.Action
+}
+
+func (h *helloAction) Call() error {
+	common.Logger.Info("Hello go go")
+	return nil
+}
+
+func initializing() {
+	common.Logger.Info("initializing begin ......")
+	infra.KvOpen()
+	infra.InitFs()
+	common.Logger.Info("initializing over")
+
+	common.AddAaction(&helloAction{})
+}
+
 func main() {
 	conf := "../config/tao.yaml"
 	baInfra := common.BaseInit(conf)
 	baInfra.Logger.Info("Hello go")
+
+	// 初始化
+	initializing()
+
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
+
 	router := gin.New()
 	router.MaxMultipartMemory = 8 << 20
 	router.Use(gateFilter())
@@ -95,12 +119,4 @@ func main() {
 	}
 	common.TcloseItems()
 	baInfra.Logger.Info("Server exist")
-}
-
-func CreateRestHandler() {
-	panic("unimplemented")
-}
-
-func RestHandler() {
-	panic("unimplemented")
 }

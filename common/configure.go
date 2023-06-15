@@ -21,6 +21,8 @@ type xxcConf struct {
 
 type infraConf struct {
 	DbDns string `yaml:"db_dns"`
+	KvDir string `yaml:"kv_dir"`
+	FsDir string `yaml:"fs_dir"`
 }
 
 type loggerConf struct {

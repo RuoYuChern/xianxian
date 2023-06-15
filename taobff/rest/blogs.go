@@ -7,7 +7,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"xiyu.com/common"
-	"xiyu.com/facada"
+	"xiyu.com/facade"
 	"xiyu.com/infra"
 )
 
@@ -34,7 +34,7 @@ func batchGet(c *gin.Context) {
 		return
 	}
 
-	blogs := make([]*facada.Article, 0)
+	blogs := make([]*facade.Article, 0)
 	var offset = 0
 	for v := range rsp.Item {
 		mvo := rsp.Item[v]
@@ -44,12 +44,12 @@ func batchGet(c *gin.Context) {
 		}
 
 		img := fmt.Sprintf("%s/bff/blogs/material-get?media_id=%s", common.GlbBaInfa.Conf.Http.Host, news.Tmid)
-		wz := facada.Article{Id: mvo.Mid, Type: "gzh", Title: news.Title,
+		wz := facade.Article{Id: mvo.Mid, Type: "gzh", Title: news.Title,
 			Author: news.Author, Desc: news.Digest, Img: img, Url: news.Url}
 		blogs = append(blogs, &wz)
 		offset++
 	}
-	bgr := facada.BatchGetBlogRsp{Code: rsp.Code, Msg: rsp.Msg, Blogs: blogs}
+	bgr := facade.BatchGetBlogRsp{Code: rsp.Code, Msg: rsp.Msg, Blogs: blogs}
 
 	c.JSON(http.StatusOK, &bgr)
 }

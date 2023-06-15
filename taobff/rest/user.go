@@ -7,12 +7,22 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"xiyu.com/common"
-	"xiyu.com/facada"
+	"xiyu.com/facade"
 	"xiyu.com/infra"
 )
 
+type httpGetWork struct {
+	avator string
+	openid string
+	common.Action
+}
+
+func (h *httpGetWork) Call() error {
+	return nil
+}
+
 func wxlogin(c *gin.Context) {
-	wxlog := facada.WxLogin{}
+	wxlog := facade.WxLogin{}
 	if err := c.BindJSON(&wxlog); err != nil {
 		common.GlbBaInfa.Logger.Infoln("Can not find args")
 		c.String(http.StatusBadRequest, "Can not find args")
@@ -34,10 +44,12 @@ func wxlogin(c *gin.Context) {
 	}
 	c.Header("Authorization", fmt.Sprintf("Bearer %s", jwt))
 	c.String(http.StatusOK, "ok")
+	// 添加后台抓取 用户头像
+	common.AddAaction(&httpGetWork{avator: wxlog.Avatar, openid: rsp.Openid})
 }
 
 func wxregister(c *gin.Context) {
-	wxlog := facada.WxLogin{}
+	wxlog := facade.WxLogin{}
 	if err := c.BindJSON(&wxlog); err != nil {
 		common.GlbBaInfa.Logger.Infoln("Can not find args")
 		c.String(http.StatusBadRequest, "Can not find args")

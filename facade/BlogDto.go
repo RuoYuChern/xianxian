@@ -1,4 +1,4 @@
-package facada
+package facade
 
 type Article struct {
 	Id     string `json:"id"`
