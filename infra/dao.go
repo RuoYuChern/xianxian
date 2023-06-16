@@ -24,25 +24,62 @@ func UserSave(usr *grpc.UserDto) error {
 	return nil
 }
 
-func UserGetAvator(opendId string) ([]byte, error) {
-	key := fmt.Sprintf("user.%s", opendId)
+func userGet(openId string, usr *grpc.UserDto) error {
+	key := fmt.Sprintf("user.%s", openId)
+	dat, err := KvGet(key)
+	if err != nil {
+		common.Logger.Infof("Get %s failed:%s", key, err.Error())
+		return err
+	}
+	err = proto.Unmarshal(dat, usr)
+	if err != nil {
+		common.Logger.Warnf("Unmarshal user %s data failed:%s", openId, err.Error())
+		return err
+	}
+	return nil
+}
+
+func UserSaveAvator(nickName string, openId string, dat []byte) error {
+	fs, _ := GetFs(Aavator)
+	ref, err := fs.Write(&grpc.FsBlockVo{OriginId: openId, Content: dat})
+	if err != nil {
+		common.Logger.Infof("write user:%s data failed:%s", openId, err.Error())
+		return err
+	}
+
+	usr := &grpc.UserDto{}
+	err = userGet(openId, usr)
+	if err != nil {
+		usr.OpenId = openId
+		usr.NickName = nickName
+		usr.AvatorRef = ref
+	} else {
+		usr.AvatorRef = ref
+	}
+
+	return UserSave(usr)
+
+}
+
+func UserGetAvator(openId string) ([]byte, error) {
+	key := fmt.Sprintf("user.%s", openId)
 	in, err := KvGet(key)
 	if err != nil {
-		common.Logger.Warnf("KvGet user %s data failed:%s", opendId, err.Error())
+		common.Logger.Warnf("KvGet user %s data failed:%s", openId, err.Error())
 		return nil, err
 	}
 
 	usr := &grpc.UserDto{}
 	err = proto.Unmarshal(in, usr)
 	if err != nil {
-		common.Logger.Warnf("Unmarshal user %s data failed:%s", opendId, err.Error())
+		common.Logger.Warnf("Unmarshal user %s data failed:%s", openId, err.Error())
 		return nil, err
 	}
 
 	fs, _ := GetFs(Aavator)
 	blk, err := fs.Read(usr.AvatorRef)
 	if err != nil {
-		common.Logger.Warnf("Read user %s data failed:%s", opendId, err.Error())
+		common.Logger.Warnf("Read user %s data failed:%s", openId, err.Error())
 		return nil, err
 	}
 	return blk.Content, nil

@@ -30,7 +30,7 @@ func KvOpen() {
 		common.Logger.Errorf("kvopen failed:%s", err.Error())
 		panic(err.Error())
 	}
-	kvdb = &kvDb{db: db}
+	kvdb = &kvDb{db: db, seqMap: make(map[string]*badger.Sequence)}
 	common.TaddItem(kvdb)
 }
 

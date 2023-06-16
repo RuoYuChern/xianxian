@@ -67,7 +67,7 @@ func work(i int) {
 		case quit := <-get().quit:
 			Logger.Infof("actor %d %s", workNo, quit)
 			stop = true
-		case <-time.After(30 * time.Second):
+		case <-time.After(600 * time.Second):
 			Logger.Infof("actor %d, %s", workNo, "time after")
 		}
 		if stop {
