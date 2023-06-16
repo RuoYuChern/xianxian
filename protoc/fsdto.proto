@@ -1,0 +1,21 @@
+syntax = "proto3";
+option go_package = "facade/grpc";
+package grpc;
+
+
+message FsBlockVo{
+    string originId = 1;
+    bytes content = 2;
+} 
+
+message FsBlockDto{
+    int32 ref = 1;
+    string originId = 2;
+    bytes content = 3;
+}
+
+message UserDto{
+	string openId   = 1;
+	string nickName = 2;
+	string avatorRef   = 3;
+}

@@ -47,6 +47,14 @@ func get() *httpConnector {
 func (hc *httpConnector) Close() {
 }
 
+func GetWithUrl(url string) ([]byte, error) {
+	body, err := doGet(url)
+	if err != nil {
+		return nil, err
+	}
+	return body, nil
+}
+
 func Code2Session(code string) (*Code2SessionRsp, error) {
 	urlTemp := "https://api.weixin.qq.com/sns/jscode2session?appid=%s&secret=%s&js_code=%s&grant_type=authorization_code"
 	url := fmt.Sprintf(urlTemp, common.GlbBaInfa.Conf.Xxc.AppId, common.GlbBaInfa.Conf.Xxc.Token, code)

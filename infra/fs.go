@@ -1,6 +1,7 @@
 package infra
 
 import (
+	"encoding/binary"
 	"errors"
 	"fmt"
 	"io/fs"
@@ -10,7 +11,9 @@ import (
 	"strings"
 	"sync"
 
+	"google.golang.org/protobuf/proto"
 	"xiyu.com/common"
+	"xiyu.com/facade/grpc"
 )
 
 const file_max_size = (200 << 20)
@@ -60,25 +63,35 @@ func NewFs(prefix string) *Fs {
 	return fs
 }
 
-func (tfs *Fs) Read(ref string) ([]byte, error) {
-	parts := strings.SplitN(ref, "-", 3)
-	if len(parts) != 3 {
-		return nil, errors.New("parts error")
-	}
+func (tfs *Fs) Read(blockAdr string) (*grpc.FsBlockVo, error) {
 
-	offset, err := strconv.ParseInt(parts[1], 10, 64)
+	key := fmt.Sprintf("%s.map.%s", tfs.prefix, blockAdr)
+	val, err := KvGet(key)
 	if err != nil {
-		common.Logger.Warnf("%s offset error:%s", ref, parts[1])
+		common.Logger.Warnf("Block %s is not exist:%s", blockAdr, err.Error())
+		return nil, err
+	}
+
+	ref := string(val)
+
+	parts := strings.SplitN(ref, "-", 5)
+	if len(parts) != 5 {
 		return nil, errors.New("parts error")
 	}
 
-	len, err := strconv.ParseInt(parts[2], 10, 64)
+	offset, err := strconv.ParseInt(parts[3], 10, 64)
 	if err != nil {
-		common.Logger.Warnf("%s len error:%s", ref, parts[1])
+		common.Logger.Warnf("%s offset error:%s", ref, parts[3])
 		return nil, errors.New("parts error")
 	}
 
-	name := fmt.Sprintf("%s/%s/%s", common.GlbBaInfa.Conf.Infra.FsDir, tfs.prefix, parts[0])
+	len, err := strconv.ParseInt(parts[4], 10, 64)
+	if err != nil {
+		common.Logger.Warnf("%s len error:%s", ref, parts[4])
+		return nil, errors.New("parts error")
+	}
+
+	name := fmt.Sprintf("%s/%s/%s", common.GlbBaInfa.Conf.Infra.FsDir, tfs.prefix, parts[2])
 	file, err := os.OpenFile(name, os.O_RDONLY, 0644)
 	if err != nil {
 		common.Logger.Warnf("open %s failed:%s", name, err.Error())
@@ -98,13 +111,34 @@ func (tfs *Fs) Read(ref string) ([]byte, error) {
 		return nil, errors.New("read len error")
 	}
 
-	return dat, nil
+	// 解析
+	blcDto := &grpc.FsBlockDto{}
+	//跳过头
+	err = proto.Unmarshal(dat[4:], blcDto)
+	if err != nil {
+		common.Logger.Warnf("Unmarshal %s failed:%s", name, err.Error())
+		return nil, err
+	}
+
+	return &grpc.FsBlockVo{OriginId: blcDto.OriginId, Content: blcDto.Content}, nil
 }
 
-func (tfs *Fs) Write(dat []byte) (string, error) {
+func (tfs *Fs) Write(dat *grpc.FsBlockVo) (string, error) {
 	tfs.mu.Lock()
 	defer tfs.mu.Unlock()
-	if (tfs.offset + (int64(len(dat)))) >= file_max_size {
+
+	blk := &grpc.FsBlockDto{Ref: 1, OriginId: dat.OriginId, Content: dat.Content}
+	out, err := proto.Marshal(blk)
+	if err != nil {
+		common.Logger.Errorf("write fs:%s-%d Marshal:%s", tfs.prefix, tfs.blockNo, err.Error())
+		return "", err
+	}
+
+	bs := make([]byte, 4)
+	binary.LittleEndian.PutUint32(bs, uint32(len(out)))
+	bs = append(bs, out...)
+
+	if (tfs.offset + (int64(len(bs)))) >= file_max_size {
 		tfs.file.Close()
 		tfs.file = nil
 		tfs.blockNo = tfs.blockNo + 1
@@ -113,19 +147,33 @@ func (tfs *Fs) Write(dat []byte) (string, error) {
 			return "", err
 		}
 	}
-	n, err := tfs.file.Write(dat)
+
+	n, err := tfs.file.Write(bs)
 	if err != nil {
 		common.Logger.Errorf("write fs:%s-%d failed:%s", tfs.prefix, tfs.blockNo, err.Error())
 		return "", err
 	}
-	if n != len(dat) {
-		common.Logger.Errorf("write fs:%s-%d len error: %d != %d", tfs.prefix, tfs.blockNo, n, len(dat))
+	if n != len(bs) {
+		common.Logger.Errorf("write fs:%s-%d len error: %d != %d", tfs.prefix, tfs.blockNo, n, len(bs))
 		return "", errors.New("len error")
 	}
 
-	blockRef := fmt.Sprintf("%d-%d-%d", tfs.blockNo, tfs.offset, n)
+	blockRef := fmt.Sprintf("%s-blk-%d-%d-%d", tfs.prefix, tfs.blockNo, tfs.offset, n)
 	tfs.offset += int64(n)
-	return blockRef, nil
+	seq, err := KvSeq(tfs.prefix)
+	if err != nil {
+		common.Logger.Errorf("write get obj number failed:%s", err.Error())
+		return "", err
+	}
+
+	key := fmt.Sprintf("%s.map.%d", tfs.prefix, seq)
+	err = KvSet(key, blockRef)
+	if err != nil {
+		common.Logger.Errorf("set ref failed failed:%s", err.Error())
+		return "", err
+	}
+
+	return strconv.FormatUint(seq, 10), nil
 }
 
 func (tfs *Fs) openFile() error {
